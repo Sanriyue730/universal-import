@@ -25,6 +25,11 @@ export default function OrderList() {
   const [loading, setLoading] = useState(false)
   const [searchTrigger, setSearchTrigger] = useState(0)
 
+  // Selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [batchDeleting, setBatchDeleting] = useState(false)
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false)
+
   // Search fields
   const [externalCode, setExternalCode] = useState('')
   const [receiverName, setReceiverName] = useState('')
@@ -61,6 +66,9 @@ export default function OrderList() {
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
+  // Clear selection when page changes
+  useEffect(() => { setSelectedIds(new Set()) }, [page, searchTrigger])
+
   const handleReset = () => {
     setExternalCode('')
     setReceiverName('')
@@ -69,6 +77,46 @@ export default function OrderList() {
     setDateTo('')
     setPage(1)
     setSearchTrigger(t => t + 1)
+  }
+
+  // Selection handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === orders.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(orders.map(o => o.id)))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // Batch delete
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return
+    setBatchDeleting(true)
+    try {
+      const res = await fetch('/api/orders/batch', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      })
+      if (res.ok) {
+        setSelectedIds(new Set())
+        setShowBatchConfirm(false)
+        fetchOrders()
+      } else {
+        const data = await res.json()
+        alert(data.error || '批量删除失败')
+      }
+    } catch { alert('网络错误') }
+    setBatchDeleting(false)
   }
 
   const handleEdit = (order: Order) => {
@@ -111,12 +159,25 @@ export default function OrderList() {
     setDeleting(false)
   }
 
+  const isAllSelected = orders.length > 0 && selectedIds.size === orders.length
+
   return (
     <div className="bg-white rounded-xl shadow">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold">已导入运单列表</h2>
-          <span className="text-sm text-gray-500">共 {total} 条记录</span>
+          <div className="flex items-center gap-3">
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => setShowBatchConfirm(true)}
+                className="px-4 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                批量删除 ({selectedIds.size})
+              </button>
+            )}
+            <span className="text-sm text-gray-500">共 {total} 条记录</span>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <div>
@@ -146,9 +207,18 @@ export default function OrderList() {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[1100px]">
+        <table className="w-full text-sm min-w-[1200px]">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-3 py-2 text-center w-10">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  title="全选/取消全选"
+                />
+              </th>
               <th className="px-3 py-2 text-left">外部编码</th>
               <th className="px-3 py-2 text-left">发件人</th>
               <th className="px-3 py-2 text-left">收件人</th>
@@ -163,11 +233,19 @@ export default function OrderList() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} className="text-center py-8 text-gray-400">加载中...</td></tr>
+              <tr><td colSpan={11} className="text-center py-8 text-gray-400">加载中...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-8 text-gray-400">暂无数据</td></tr>
+              <tr><td colSpan={11} className="text-center py-8 text-gray-400">暂无数据</td></tr>
             ) : orders.map(order => (
-              <tr key={order.id} className="border-t hover:bg-gray-50">
+              <tr key={order.id} className={`border-t hover:bg-gray-50 ${selectedIds.has(order.id) ? 'bg-blue-50' : ''}`}>
+                <td className="px-3 py-2 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(order.id)}
+                    onChange={() => toggleSelect(order.id)}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </td>
                 <td className="px-3 py-2">{order.externalCode || '-'}</td>
                 <td className="px-3 py-2">{order.senderName}</td>
                 <td className="px-3 py-2">{order.receiverName}</td>
@@ -244,6 +322,20 @@ export default function OrderList() {
             <div className="flex justify-end gap-3">
               <button onClick={() => setDeletingId(null)} className="px-4 py-2 border rounded hover:bg-gray-50">取消</button>
               <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50">{deleting ? '删除中...' : '确认删除'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Delete Confirm Modal */}
+      {showBatchConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-2">确认批量删除</h3>
+            <p className="text-gray-600 mb-6">确定要删除选中的 <span className="font-bold text-red-600">{selectedIds.size}</span> 条运单信息吗？此操作不可撤销。</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowBatchConfirm(false)} className="px-4 py-2 border rounded hover:bg-gray-50">取消</button>
+              <button onClick={handleBatchDelete} disabled={batchDeleting} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50">{batchDeleting ? '删除中...' : '确认删除'}</button>
             </div>
           </div>
         </div>
