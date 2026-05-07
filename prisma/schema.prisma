@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  externalCode   String?  @map("external_code")
+  senderName     String   @map("sender_name")
+  senderPhone    String   @map("sender_phone")
+  senderAddress  String   @map("sender_address")
+  receiverName   String   @map("receiver_name")
+  receiverPhone  String   @map("receiver_phone")
+  receiverAddress String  @map("receiver_address")
+  weight         Float
+  quantity       Int
+  tempZone       String   @map("temp_zone")
+  remark         String?
+  batchId        String   @map("batch_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("orders")
+}
+
+model TemplateMapping {
+  id          String   @id @default(cuid())
+  fingerprint String   @unique
+  mapping     String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("template_mappings")
+}
