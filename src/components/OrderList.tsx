@@ -22,14 +22,22 @@ export default function OrderList() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Individual search fields
+  const [externalCode, setExternalCode] = useState('')
+  const [receiverName, setReceiverName] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: '20' })
-      if (search) params.set('search', search)
+      if (externalCode) params.set('externalCode', externalCode)
+      if (receiverName) params.set('receiverName', receiverName)
+      if (dateFrom) params.set('dateFrom', dateFrom)
+      if (dateTo) params.set('dateTo', dateTo)
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
       setOrders(data.orders || [])
@@ -37,23 +45,71 @@ export default function OrderList() {
       setTotalPages(data.totalPages || 1)
     } catch { /* ignore */ }
     setLoading(false)
-  }, [page, search])
+  }, [page, externalCode, receiverName, dateFrom, dateTo])
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
+  const handleReset = () => {
+    setExternalCode('')
+    setReceiverName('')
+    setDateFrom('')
+    setDateTo('')
+    setPage(1)
+  }
+
   return (
     <div className="bg-white rounded-xl shadow">
-      <div className="p-4 border-b flex items-center justify-between">
-        <h2 className="text-lg font-bold">已导入运单列表</h2>
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            placeholder="搜索外部编码/收件人..."
-            className="border rounded px-3 py-1.5 text-sm w-64"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          />
-          <span className="text-sm text-gray-500">共 {total} 条</span>
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold">已导入运单列表</h2>
+          <span className="text-sm text-gray-500">共 {total} 条记录</span>
+        </div>
+        {/* Search filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">外部编码</label>
+            <input
+              type="text"
+              placeholder="输入外部编码"
+              className="w-full border rounded px-3 py-1.5 text-sm"
+              value={externalCode}
+              onChange={(e) => { setExternalCode(e.target.value); setPage(1) }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">收件人姓名</label>
+            <input
+              type="text"
+              placeholder="输入收件人姓名"
+              className="w-full border rounded px-3 py-1.5 text-sm"
+              value={receiverName}
+              onChange={(e) => { setReceiverName(e.target.value); setPage(1) }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">提交时间（从）</label>
+            <input
+              type="date"
+              className="w-full border rounded px-3 py-1.5 text-sm"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">提交时间（至）</label>
+            <input
+              type="date"
+              className="w-full border rounded px-3 py-1.5 text-sm"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleReset}
+              className="px-4 py-1.5 text-sm border rounded hover:bg-gray-50 w-full"
+            >重置筛选</button>
+          </div>
         </div>
       </div>
       <div className="overflow-x-auto">
