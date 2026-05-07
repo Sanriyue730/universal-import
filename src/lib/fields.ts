@@ -44,19 +44,41 @@ export function generateFingerprint(headers: string[]): string {
 // Auto-detect column mapping
 export function autoDetectMapping(headers: string[]): Record<string, number> {
   const mapping: Record<string, number> = {}
+  const usedColumns: Set<number> = new Set()
   
+  // First pass: exact matches (highest priority)
   for (const [fieldKey, aliases] of Object.entries(COLUMN_ALIASES)) {
     for (let i = 0; i < headers.length; i++) {
+      if (usedColumns.has(i)) continue
       const header = headers[i]?.trim()
       if (!header) continue
       const normalizedHeader = header.toLowerCase().replace(/[\s\(\)（）]/g, '')
       for (const alias of aliases) {
         const normalizedAlias = alias.toLowerCase().replace(/[\s\(\)（）]/g, '')
-        if (normalizedHeader === normalizedAlias || normalizedHeader.includes(normalizedAlias) || normalizedAlias.includes(normalizedHeader)) {
-          if (!mapping[fieldKey]) {
-            mapping[fieldKey] = i
-            break
-          }
+        if (normalizedHeader === normalizedAlias) {
+          mapping[fieldKey] = i
+          usedColumns.add(i)
+          break
+        }
+      }
+      if (mapping[fieldKey] !== undefined) break
+    }
+  }
+  
+  // Second pass: contains matches (for remaining unmapped fields)
+  for (const [fieldKey, aliases] of Object.entries(COLUMN_ALIASES)) {
+    if (mapping[fieldKey] !== undefined) continue
+    for (let i = 0; i < headers.length; i++) {
+      if (usedColumns.has(i)) continue
+      const header = headers[i]?.trim()
+      if (!header) continue
+      const normalizedHeader = header.toLowerCase().replace(/[\s\(\)（）]/g, '')
+      for (const alias of aliases) {
+        const normalizedAlias = alias.toLowerCase().replace(/[\s\(\)（）]/g, '')
+        if (normalizedHeader.includes(normalizedAlias) || normalizedAlias.includes(normalizedHeader)) {
+          mapping[fieldKey] = i
+          usedColumns.add(i)
+          break
         }
       }
       if (mapping[fieldKey] !== undefined) break
