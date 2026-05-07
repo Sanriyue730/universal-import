@@ -30,6 +30,9 @@ export default function OrderList() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
+  // Only fetch when page changes or manual search triggered
+  const [searchTrigger, setSearchTrigger] = useState(0)
+
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
@@ -45,7 +48,7 @@ export default function OrderList() {
       setTotalPages(data.totalPages || 1)
     } catch { /* ignore */ }
     setLoading(false)
-  }, [page, externalCode, receiverName, dateFrom, dateTo])
+  }, [page, searchTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
@@ -55,6 +58,7 @@ export default function OrderList() {
     setDateFrom('')
     setDateTo('')
     setPage(1)
+    setSearchTrigger(t => t + 1)
   }
 
   return (
@@ -73,7 +77,7 @@ export default function OrderList() {
               placeholder="输入外部编码"
               className="w-full border rounded px-3 py-1.5 text-sm"
               value={externalCode}
-              onChange={(e) => { setExternalCode(e.target.value); setPage(1) }}
+              onChange={(e) => { setExternalCode(e.target.value) }}
             />
           </div>
           <div>
@@ -83,7 +87,7 @@ export default function OrderList() {
               placeholder="输入收件人姓名"
               className="w-full border rounded px-3 py-1.5 text-sm"
               value={receiverName}
-              onChange={(e) => { setReceiverName(e.target.value); setPage(1) }}
+              onChange={(e) => { setReceiverName(e.target.value) }}
             />
           </div>
           <div>
@@ -92,7 +96,7 @@ export default function OrderList() {
               type="date"
               className="w-full border rounded px-3 py-1.5 text-sm"
               value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+              onChange={(e) => { setDateFrom(e.target.value) }}
             />
           </div>
           <div>
@@ -101,14 +105,18 @@ export default function OrderList() {
               type="date"
               className="w-full border rounded px-3 py-1.5 text-sm"
               value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+              onChange={(e) => { setDateTo(e.target.value) }}
             />
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => { setPage(1); setSearchTrigger(t => t + 1) }}
+              className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            >查询</button>
             <button
               onClick={handleReset}
-              className="px-4 py-1.5 text-sm border rounded hover:bg-gray-50 w-full"
-            >重置筛选</button>
+              className="px-4 py-1.5 text-sm border rounded hover:bg-gray-50"
+            >重置</button>
           </div>
         </div>
       </div>
