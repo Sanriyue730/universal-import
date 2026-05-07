@@ -28,6 +28,7 @@ export default function OrderList() {
   // Search fields
   const [externalCode, setExternalCode] = useState('')
   const [receiverName, setReceiverName] = useState('')
+  const [phone, setPhone] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
@@ -46,6 +47,7 @@ export default function OrderList() {
       const params = new URLSearchParams({ page: String(page), pageSize: '20' })
       if (externalCode) params.set('externalCode', externalCode)
       if (receiverName) params.set('receiverName', receiverName)
+      if (phone) params.set('phone', phone)
       if (dateFrom) params.set('dateFrom', dateFrom)
       if (dateTo) params.set('dateTo', dateTo)
       const res = await fetch(`/api/orders?${params}`)
@@ -62,6 +64,7 @@ export default function OrderList() {
   const handleReset = () => {
     setExternalCode('')
     setReceiverName('')
+    setPhone('')
     setDateFrom('')
     setDateTo('')
     setPage(1)
@@ -115,7 +118,7 @@ export default function OrderList() {
           <h2 className="text-lg font-bold">已导入运单列表</h2>
           <span className="text-sm text-gray-500">共 {total} 条记录</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">外部编码</label>
             <input type="text" placeholder="输入外部编码" className="w-full border rounded px-3 py-1.5 text-sm" value={externalCode} onChange={(e) => setExternalCode(e.target.value)} />
@@ -123,6 +126,10 @@ export default function OrderList() {
           <div>
             <label className="block text-xs text-gray-500 mb-1">收件人姓名</label>
             <input type="text" placeholder="输入收件人姓名" className="w-full border rounded px-3 py-1.5 text-sm" value={receiverName} onChange={(e) => setReceiverName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">手机号</label>
+            <input type="text" placeholder="输入手机号" className="w-full border rounded px-3 py-1.5 text-sm" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">提交时间（从）</label>

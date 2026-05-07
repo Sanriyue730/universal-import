@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
     const externalCode = searchParams.get('externalCode') || ''
     const receiverName = searchParams.get('receiverName') || ''
+    const phone = searchParams.get('phone') || ''
     const dateFrom = searchParams.get('dateFrom') || ''
     const dateTo = searchParams.get('dateTo') || ''
 
@@ -18,6 +19,14 @@ export async function GET(req: NextRequest) {
     }
     if (receiverName) {
       conditions.push({ receiverName: { contains: receiverName, mode: 'insensitive' } })
+    }
+    if (phone) {
+      conditions.push({
+        OR: [
+          { senderPhone: { contains: phone } },
+          { receiverPhone: { contains: phone } },
+        ]
+      })
     }
     if (dateFrom) {
       conditions.push({ createdAt: { gte: new Date(dateFrom) } })
