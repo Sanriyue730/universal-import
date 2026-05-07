@@ -147,9 +147,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="bg-white shadow-sm border-b shrink-0">
+        <div className="w-full px-4 xl:px-8 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-800">📦 万能导入 —— 多模板自动导入下单系统</h1>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             <button
@@ -164,7 +164,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="flex-1 w-full px-4 xl:px-8 py-6">
         {tab === 'orders' ? (
           <OrderList />
         ) : (

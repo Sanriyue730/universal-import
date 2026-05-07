@@ -46,6 +46,15 @@ export default function OrderList() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Add modal
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addForm, setAddForm] = useState<Record<string, string>>({
+    externalCode: '', senderName: '', senderPhone: '', senderAddress: '',
+    receiverName: '', receiverPhone: '', receiverAddress: '',
+    weight: '', quantity: '1', tempZone: '常温', remark: '',
+  })
+  const [adding, setAdding] = useState(false)
+
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
@@ -119,6 +128,39 @@ export default function OrderList() {
     setBatchDeleting(false)
   }
 
+  // Add order
+  const handleAdd = async () => {
+    if (!addForm.receiverName || !addForm.receiverPhone || !addForm.receiverAddress) {
+      alert('收件人姓名、电话、地址为必填项')
+      return
+    }
+    setAdding(true)
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...addForm,
+          weight: parseFloat(addForm.weight) || 0,
+          quantity: parseInt(addForm.quantity) || 1,
+        }),
+      })
+      if (res.ok) {
+        setShowAddModal(false)
+        setAddForm({
+          externalCode: '', senderName: '', senderPhone: '', senderAddress: '',
+          receiverName: '', receiverPhone: '', receiverAddress: '',
+          weight: '', quantity: '1', tempZone: '常温', remark: '',
+        })
+        fetchOrders()
+      } else {
+        const data = await res.json()
+        alert(data.error || '新增失败')
+      }
+    } catch { alert('网络错误') }
+    setAdding(false)
+  }
+
   const handleEdit = (order: Order) => {
     setEditingOrder(order)
     setEditForm({ ...order })
@@ -165,8 +207,15 @@ export default function OrderList() {
     <div className="bg-white rounded-xl shadow">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">已导入运单列表</h2>
+          <h2 className="text-lg font-bold">运单列表</h2>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              新增运单
+            </button>
             {selectedIds.size > 0 && (
               <button
                 onClick={() => setShowBatchConfirm(true)}
@@ -336,6 +385,47 @@ export default function OrderList() {
             <div className="flex justify-end gap-3">
               <button onClick={() => setShowBatchConfirm(false)} className="px-4 py-2 border rounded hover:bg-gray-50">取消</button>
               <button onClick={handleBatchDelete} disabled={batchDeleting} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50">{batchDeleting ? '删除中...' : '确认删除'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Order Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-lg font-bold mb-4">新增运单</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'externalCode', label: '外部编码' },
+                { key: 'senderName', label: '发件人姓名' },
+                { key: 'senderPhone', label: '发件人电话' },
+                { key: 'senderAddress', label: '发件人地址' },
+                { key: 'receiverName', label: '收件人姓名 *' },
+                { key: 'receiverPhone', label: '收件人电话 *' },
+                { key: 'receiverAddress', label: '收件人地址 *' },
+                { key: 'weight', label: '重量(kg)' },
+                { key: 'quantity', label: '件数' },
+                { key: 'tempZone', label: '温层' },
+                { key: 'remark', label: '备注' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+                  {f.key === 'tempZone' ? (
+                    <select className="w-full border rounded px-3 py-1.5 text-sm" value={addForm[f.key]} onChange={(e) => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))}>
+                      <option value="常温">常温</option>
+                      <option value="冷藏">冷藏</option>
+                      <option value="冷冻">冷冻</option>
+                    </select>
+                  ) : (
+                    <input type="text" className="w-full border rounded px-3 py-1.5 text-sm" placeholder={f.label.replace(' *', '')} value={addForm[f.key]} onChange={(e) => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowAddModal(false)} className="px-4 py-2 border rounded hover:bg-gray-50">取消</button>
+              <button onClick={handleAdd} disabled={adding} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">{adding ? '提交中...' : '确认新增'}</button>
             </div>
           </div>
         </div>
